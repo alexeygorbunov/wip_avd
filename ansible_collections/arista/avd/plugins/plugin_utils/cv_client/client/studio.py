@@ -28,6 +28,7 @@ from ..api.arista.studio.v1 import (
     StudioServiceStub,
 )
 from ..api.fmp import RepeatedString
+from .constants import DEFAULT_API_TIMEOUT
 from .exceptions import CVResourceNotFound, get_cv_client_exception
 
 if TYPE_CHECKING:
@@ -126,7 +127,7 @@ class StudioMixin:
         workspace_id: str,
         default_value: Any = None,
         time: datetime | None = None,
-        timeout: float = 10.0,
+        timeout: float = DEFAULT_API_TIMEOUT,
     ) -> Any:
         """
         Get Studio Inputs using arista.studio.v1.InputsService.GetAll and arista.studio.v1.InputsConfigServer.GetAll APIs.
@@ -233,7 +234,7 @@ class StudioMixin:
         input_path: list[str],
         default_value: Any = None,
         time: datetime | None = None,
-        timeout: float = 10.0,
+        timeout: float = DEFAULT_API_TIMEOUT,
     ) -> Any:
         """
         Get Studio Inputs for a specific path using arista.studio.v1.InputsService.GetOne and arista.studio.v1.InputsConfigServer.GetAll APIs.
@@ -334,7 +335,7 @@ class StudioMixin:
         workspace_id: str,
         inputs: Any,
         input_path: list[str] | None = None,
-        timeout: float = 10.0,
+        timeout: float = DEFAULT_API_TIMEOUT,
     ) -> InputsConfig:
         """
         Set Studio Inputs using arista.studio.v1.InputsConfigService.Set API.
@@ -374,7 +375,7 @@ class StudioMixin:
         workspace_id: str,
         device_ids: list[str] | None = None,
         time: datetime | None = None,
-        timeout: float = 10.0,
+        timeout: float = DEFAULT_API_TIMEOUT,
     ) -> list[dict]:
         """
         TODO: Once the topology studio inputs API is public, this function can be replaced by the _future variant.
@@ -428,7 +429,7 @@ class StudioMixin:
         self: CVClient,
         workspace_id: str,
         device_inputs: list[tuple[str, str, str]],
-        timeout: float = 10.0,
+        timeout: float = DEFAULT_API_TIMEOUT,
     ) -> list[InputsKey]:
         """
         TODO: Once the topology studio inputs API is public, this function can be replaced by the _future variant.
@@ -512,7 +513,7 @@ class StudioMixin:
     #     workspace_id: str,
     #     device_ids: list[str] | None = None,
     #     time: datetime | None = None,
-    #     timeout: float = 10.0,
+    #     timeout: float = DEFAULT_API_TIMEOUT,
     # ) -> list[TopologyInput]:
     #     """
     #     TODO: Once the topology studio inputs API is public, this function can be put in place.
@@ -557,7 +558,7 @@ class StudioMixin:
     #     self: CVClient,
     #     workspace_id: str,
     #     device_inputs: list[tuple[str, str]],
-    #     timeout: float = 30.0,
+    #     timeout: float = DEFAULT_API_TIMEOUT,
     # ) -> list[TopologyInputKey]:
     #     """
     #     TODO: Once the topology studio inputs API is public, this function can be put in place.
