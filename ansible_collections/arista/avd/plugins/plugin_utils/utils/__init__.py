@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file.
 from .append_if_not_duplicate import append_if_not_duplicate
 from .batch import batch
+from .calculate_hash import calculate_hash
 from .compare_dicts import compare_dicts
 from .compile_searchpath import compile_searchpath
 from .cprofile_decorator import cprofile
@@ -29,6 +30,7 @@ from .yaml_loader import YamlLoader
 __all__ = [
     "append_if_not_duplicate",
     "batch",
+    "calculate_hash",
     "compare_dicts",
     "compile_searchpath",
     "default",

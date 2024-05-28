@@ -5,8 +5,9 @@ from __future__ import annotations
 
 from asyncio import gather
 from logging import getLogger
+from pathlib import Path
 
-from ...utils import batch
+from ...utils import batch, calculate_hash
 from ..client import CVClient
 from .models import CVEosConfig, DeployToCvResult
 
@@ -58,18 +59,39 @@ async def deploy_configlets_to_cv(configs: list[CVEosConfig], workspace_id: str,
     Bluntly setting configs like nothing was there. Only create missing containers
     TODO: Fetch config checksums for existing configs and only upload what is needed.
     """
+    
+    # fetch existing Static Studios configlet that have overlapping configletId with new configlets
+    existing_device_configlet_hash_by_id = {}
+    if existing_configlets := await cv_client.get_configlets(
+        workspace_id="",
+        configlet_ids=[str(f"{CONFIGLET_ID_PREFIX}{config.device.serial_number}") for config in configs if (hasattr(config, "device") and hasattr(config.device, "serial_number"))]
+        ):
+        
+        # Fetch full configlet body to calculate SHA256 hash
+        for existing_configlet in existing_configlets:
+            existing_configlet_data = await cv_client.get_configlet(configlet_id=existing_configlet.key.configlet_id)
+            existing_device_configlet_hash_by_id[existing_configlet_data.key.configlet_id] = {"hash": calculate_hash(existing_configlet_data.body), "body": existing_configlet_data.body}
+
     configlet_coroutines = []
     for config in configs:
         configlet_id = f"{CONFIGLET_ID_PREFIX}{config.device.serial_number}"
-        configlet_coroutines.append(
-            cv_client.set_configlet_from_file(
-                workspace_id=workspace_id,
-                configlet_id=configlet_id,
-                file=config.file,
-                display_name=config.configlet_name or f"{CONFIGLET_NAME_PREFIX}{config.device.hostname}",
-                description=f"Configuration created and uploaded by AVD for {config.device.hostname}",
+
+        # Calculate SHA256 of the new configlets
+        new_configlet_body = Path(config.file).read_text(encoding="UTF-8")
+        new_configlet_hash = calculate_hash(new_configlet_body)
+        
+        if not (configlet_id in existing_device_configlet_hash_by_id and new_configlet_hash == existing_device_configlet_hash_by_id[configlet_id]["hash"]):
+            
+            # Only add new configlet to coroutines if it's hash does not math hash of already-existing configlet
+            configlet_coroutines.append(
+                cv_client.set_configlet_from_file(
+                    workspace_id=workspace_id,
+                    configlet_id=configlet_id,
+                    file=config.file,
+                    display_name=config.configlet_name or f"{CONFIGLET_NAME_PREFIX}{config.device.hostname}",
+                    description=f"Configuration created and uploaded by AVD for {config.device.hostname}",
+                )
             )
-        )
 
     LOGGER.info("deploy_configs_to_cv: Deploying %s configlets in batches of %s.", len(configlet_coroutines), PARALLEL_COROUTINES)
     for index, coroutines in enumerate(batch(configlet_coroutines, PARALLEL_COROUTINES), start=1):
@@ -128,7 +150,7 @@ async def deploy_configlet_containers_to_cv(configs: list[CVEosConfig], workspac
         LOGGER.info("deploy_configs_to_cv: %s existing device containers under AVD root container.", len(existing_device_containers))
         # Create dict keyed by container id with value of tuple containing key container parameters. Used later to detect changes.
         existing_device_containers_by_id = {
-            cv_container.key.configlet_assignment_id: (cv_container.display_name, cv_container.description, cv_container.query, cv_container.configlet_ids)
+            cv_container.key.configlet_assignment_id: (cv_container.display_name, cv_container.description, cv_container.query, cv_container.configlet_ids.values)
             for cv_container in existing_device_containers
         }
     else:

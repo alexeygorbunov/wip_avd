@@ -22,6 +22,7 @@ from ..api.arista.configlet.v1 import (
     ConfigletConfigSetRequest,
     ConfigletConfigSetSomeRequest,
     ConfigletKey,
+    ConfigletRequest,
     ConfigletServiceStub,
     ConfigletStreamRequest,
     MatchPolicy,
@@ -245,6 +246,40 @@ class ConfigletMixin:
         except Exception as e:
             raise get_cv_client_exception(e, f"Workspace ID '{workspace_id}', Configlet IDs '{configlet_ids}'") or e
 
+    async def get_configlet(
+        self: CVClient,
+        workspace_id: str = "",
+        configlet_id: str = "",
+        time: datetime | None = None,
+        timeout: float = DEFAULT_API_TIMEOUT,
+    ) -> list[Configlet]:
+        """
+        Get Configlet using arista.configlet.v1.ConfigletServiceStub.GetOne API.
+
+        Parameters:
+            workspace_id: Unique identifier of the Workspace for which the information is fetched. Use "" for mainline.
+            configlet_id: Unique identifier of Configlet.
+            time: Timestamp from which the information is fetched. `now()` if not set.
+            timeout: Timeout in seconds.
+
+        Returns:
+            List of matching Configlet objects.
+        """
+        
+        if configlet_id:
+            request = ConfigletRequest(key=ConfigletKey(workspace_id=workspace_id, configlet_id=configlet_id), time=time)
+
+        client = ConfigletServiceStub(self._channel)
+        try:
+            response = await client.get_one(request, metadata=self._metadata, timeout=timeout)
+
+            return response.value
+
+        except Exception as e:
+            raise get_cv_client_exception(e, f"Workspace ID '{workspace_id}', Configlet ID '{configlet_id}'") or e     
+        
+        
+    
     async def set_configlet(
         self: CVClient,
         workspace_id: str,
